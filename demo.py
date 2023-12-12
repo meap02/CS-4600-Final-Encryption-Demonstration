@@ -3,6 +3,7 @@ from Bob import Bob
 import glob, os
 
 if __name__ == "__main__":
+    """This demo is a simple demonstration of the protocol. It creates Alice and Bob, and then Alice sends a message to Bob, who receives it, and then Bob sends a message to Alice, who receives it."""
     load_keys = True
     if load_keys and os.path.exists("alice-private.pem") and os.path.exists("alice-public.pem") and os.path.exists("bob-private.pem") and os.path.exists("bob-public.pem"):
         print("Loading keys from files.")

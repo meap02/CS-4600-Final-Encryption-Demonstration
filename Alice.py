@@ -7,10 +7,12 @@ import hmac, os
 
 
 class Alice:
+    """Alice is a class that represents Alice in the protocol."""
     BLOCK_SIZE = 16 # Bytes
     message = "From Alice:\nLorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua."
 
     def __init__(self, load_keys=False):
+        """Initializes Alice's keys and AES cipher."""
         if load_keys:
             self.rsa_key = self.load_keys()
         else:
@@ -20,13 +22,15 @@ class Alice:
         self.cipher = cipher = AES.new(self.aes_key, AES.MODE_ECB) # Use ECB mode for simplicity
 
     def save_keys(self):
+        """Saves the RSA key pair to files."""
         with open("alice-private.pem", "wb") as f:
             f.write(self.rsa_key.export_key("PEM"))
 
         with open("alice-public.pem", "wb") as f:
             f.write(self.rsa_key.publickey().export_key("PEM"))
     
-    def load_keys(self):
+    def load_keys(self) -> RSA.RsaKey:
+        """Loads the RSA key pair from files."""
         key_pair = RSA.generate(2048)
         with open("alice-private.pem", "rb") as f:
             self.rsa_key = RSA.import_key(f.read())
@@ -37,6 +41,7 @@ class Alice:
         
 
     def send(self):
+        """Sends an encrypted message to Bob with a MAC signature."""
         # Load Bob's public key
         with open("bob-public.pem", "rb") as f:
             bob_public_key = RSA.import_key(f.read())
@@ -44,7 +49,6 @@ class Alice:
         print("Message: \n", Alice.message, "\n")
 
         # Alice encrypts her message using AES
-        
         message = pad(Alice.message.encode(), Alice.BLOCK_SIZE)
         ciphertext = self.cipher.encrypt(message)
 
@@ -71,6 +75,7 @@ class Alice:
             f.write(signature)
 
     def receive(self):
+        """Receives an encrypted message from Bob and verifies the MAC."""
         # Load Alice's private key
         with open("alice-private.pem", "rb") as f:
             alice_private_key = RSA.import_key(f.read())
@@ -100,6 +105,7 @@ class Alice:
             print("Message is not authentic")
 
 if __name__ == "__main__":
+    """This demo is a simple demonstration of the protocol. It creates Alice, as well as Alice's keys, and then Alice sends a message to Bob, who will receive it. Then Alice receives a message from Bob if Bob has sent one."""
     if not os.path.exists("alice-private.pem") and not os.path.exists("alice-public.pem"):
         alice = Alice(load_keys=False)
         print("Alice's keys generated.")
