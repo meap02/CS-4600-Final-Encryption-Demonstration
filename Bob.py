@@ -3,7 +3,7 @@ from Crypto.PublicKey import RSA
 from Crypto.Random import get_random_bytes
 from Crypto.Hash import SHA256
 from Crypto.Util.Padding import pad, unpad
-import hmac, os
+import hmac, os, pickle
 
 
 
@@ -39,18 +39,33 @@ class Bob:
         with open("bob-public.pem", "rb") as f:
             self.rsa_key = RSA.import_key(f.read())
         return key_pair
+    
+    def debug_print(self, packet):
+        if not os.path.exists("debug"):
+            os.mkdir("debug")
+        if not os.path.exists("debug/bob"):
+            os.mkdir("debug/bob")
+        with open("debug/bob/encrypted_aes_key.txt", "wb") as f:
+            f.write(packet["encrypted_aes_key"])
+        with open("debug/bob/ciphertext.txt", "wb") as f:
+            f.write(packet["ciphertext"])
+        with open("debug/bob/MAC.txt", "wb") as f:
+            f.write(packet["MAC"])
         
 
-    def send(self):
+    def send(self, message=None):
         """Sends an encrypted message to Alice with a MAC signature."""
         # Load Alices's public key
         with open("alice-public.pem", "rb") as f:
             alice_public_key = RSA.import_key(f.read())
 
-        print("Message: \n", Bob.message, "\n")
+        if not message:
+            message = Bob.message
+
+        print("Message: \n", message, "\n")
 
         # Bob encrypts her message using AES
-        message = pad(Bob.message.encode(), Bob.BLOCK_SIZE)
+        message = pad(message.encode(), Bob.BLOCK_SIZE)
         ciphertext = self.cipher.encrypt(message)
 
 
@@ -60,19 +75,22 @@ class Bob:
         # Append MAC to the encrypted message
         h = hmac.new(self.aes_key, digestmod=SHA256)
         h.update(message)
-        signature = h.digest()
 
-        encrypted_message = encrypted_aes_key + ciphertext
+        packet = {"encrypted_aes_key": encrypted_aes_key, 
+                  "ciphertext": ciphertext,
+                  "MAC": h.digest()}
+        
+        self.debug_print(packet)
 
-        print("Encrypted message: ", encrypted_message)
-        print("Signature: ", signature)
+        print("Encrypted message: ", packet["ciphertext"])
+        print("Signature: ", packet["MAC"])
 
         # Bob "sends" the encrypted message and signature to Bob
-        with open("bob_encrypted_message.txt", "wb") as f:
-            f.write(encrypted_message)
 
-        with open("bob_signature.txt", "wb") as f:
-            f.write(signature)
+
+        with open("bob_encrypted_message.pkl", "wb") as f:
+            pickle.dump(packet, f)
+
 
     def receive(self):
         """Receives an encrypted message from Alice and verifies the MAC."""
@@ -81,15 +99,14 @@ class Bob:
             bob_private_key = RSA.import_key(f.read())
 
         # Bob receives the encrypted message and signature from Bob
-        with open("alice_encrypted_message.txt", "rb") as f:
-            encrypted_message = f.read()
+        with open("alice_encrypted_message.pkl", "rb") as f:
+            packet = pickle.load(f)
 
-        with open("alice_signature.txt", "rb") as f:
-            signature = f.read()
 
         # Bob splits the encrypted message into the AES key and the ciphertext
-        encrypted_aes_key = encrypted_message[:256]
-        ciphertext = encrypted_message[256:]
+        encrypted_aes_key = packet["encrypted_aes_key"]
+        ciphertext = packet["ciphertext"]
+        signature = packet["MAC"]
 
 
         # Bob decrypts the AES key using his RSA private key
