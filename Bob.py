@@ -102,9 +102,16 @@ class Bob:
 if __name__ == "__main__":
     if not os.path.exists("bob-public.pem") and not os.path.exists("bob-private.pem"):
         bob = Bob(load_keys=False)
+        print("Bob's keys generated.")
     else:
         bob = Bob(load_keys=True)
     if os.path.exists("alice-public.pem"):
         bob.send()
+        print("Message sent from Bob to Alice.")
+    else:
+        print("Alice's public key not found. Waiting for Alice to generate keys...")
     if os.path.exists("alice_encrypted_message.txt") and os.path.exists("alice_signature.txt"):
         bob.receive()
+        print("Message from Alice received by Bob.")
+    else:
+        print("Alice's message not found. Waiting for Alice to send message...")
