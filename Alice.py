@@ -3,7 +3,7 @@ from Crypto.PublicKey import RSA
 from Crypto.Random import get_random_bytes
 from Crypto.Hash import SHA256
 from Crypto.Util.Padding import pad, unpad
-import hmac
+import hmac, os
 
 
 class Alice:
@@ -98,3 +98,13 @@ class Alice:
             print("Message is authentic:\n", unpad(message, Alice.BLOCK_SIZE).decode())
         else:
             print("Message is not authentic")
+
+if __name__ == "__main__":
+    if not os.path.exists("alice-private.pem") and not os.path.exists("alice-public.pem"):
+        alice = Alice(load_keys=False)
+    else:
+        alice = Alice(load_keys=True)
+    if os.path.exists("bob-public.pem"):
+        alice.send()
+    if os.path.exists("bob_encrypted_message.txt") and os.path.exists("bob_signature.txt"):
+        alice.receive()
